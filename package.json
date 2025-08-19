@@ -6,17 +6,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/etiquettestartshere/chatedit.git"
+    "url": "git+https://github.com/rydoq/chatedit.git"
   },
   "keywords": [
     "fvtt",
     "module"
   ],
-  "author": "alakshana",
+  "author": "rydoq",
   "bugs": {
-    "url": "https://github.com/etiquettestartshere/chatedit"
+    "url": "https://github.com/rydoq/chatedit"
   },
-  "homepage": "https://github.com/etiquettestartshere/chatedit",
+  "homepage": "https://github.com/rydoq/chatedit",
   "devDependencies": {
     "rollup": "^4.22.4"
   }
