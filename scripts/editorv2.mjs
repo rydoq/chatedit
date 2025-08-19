@@ -60,7 +60,7 @@ export default class EditorV2 extends HandlebarsApplicationMixin(ApplicationV2) 
         value: t.id,
         label: t.actor?.name,
         group: CONFIG.Actor.typeLabels[t.actor?.type],
-        selected: (this.message.speaker.token === t.id) ? true : false
+        selected: (this.message.speaker.token === t.id)
       })
       return acc;
     }, []);
@@ -69,7 +69,7 @@ export default class EditorV2 extends HandlebarsApplicationMixin(ApplicationV2) 
       value: game.user.id,
       label: game.user.name,
       group: "USER.RolePlayer",
-      selected: this.message.speaker.token ? false : true
+      selected: !this.message.speaker.token
     }];
 
     const speakers = users.concat(chars);
@@ -80,7 +80,7 @@ export default class EditorV2 extends HandlebarsApplicationMixin(ApplicationV2) 
         const actor = token.actor;
         if (!actor) continue;
 
-        const [known, literate] = PolyglotProvider.getUserLanguages([token.actor]);
+        const [known] = PolyglotProvider.getUserLanguages([token.actor]);
         if ([...known].length === 0) {
           languagesByToken[token.id] = Object.keys(PolyglotProvider.languages);
         } else {

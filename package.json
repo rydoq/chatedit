@@ -19,8 +19,5 @@
   "homepage": "https://github.com/etiquettestartshere/chatedit",
   "devDependencies": {
     "rollup": "^4.22.4"
-  },
-  "dependencies": {
-    "showdown": "^2.1.0"
   }
 }

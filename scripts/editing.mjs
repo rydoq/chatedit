@@ -15,7 +15,7 @@ export class Editing {
       
       // Add right click options to chat messages in the sidebar and popout chatlogs
       Hooks.on("getChatMessageContextOptions", Editing._contextMenu);
-    };
+    }
   }
 
   /**
@@ -60,7 +60,7 @@ export class Editing {
       flags = foundry.utils.mergeObject(message.flags, { "chatedit": { "edited": true } });
     } else {
       flags = message.flags;
-    };
+    }
 
     // Determine message style based on speaker
     const id = data.speaker;
@@ -88,7 +88,7 @@ export class Editing {
         if (PolyglotProvider) language = PolyglotProvider.defaultLanguage;
       }
       else style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.IC
-    };
+    }
 
     // Don't destroy the alias
     if (data.alias) foundry.utils.mergeObject(speaker, { alias: data.alias });
@@ -116,7 +116,7 @@ export class Editing {
 
       // Call the processed hook
       Hooks.callAll("chatedit.processChatMessage", message, parsed, parser, userid);
-    };
+    }
 
     // Call the pre edit hook, then edit
     const callback = Hooks.call("chatedit.preEditChatMessage", message, { content, speaker, style, flags }, data, userid);
@@ -195,8 +195,7 @@ export class Editing {
     const message = game.messages.get(id);
     if (!message.isAuthor) return false;
     if (message.isRoll) return false;
-    if (!foundry.utils.isEmpty(message.flags?.[game.system.id])) return false;
-    return true;
+    return foundry.utils.isEmpty(message.flags?.[game.system.id]);
   }
 
   /**
