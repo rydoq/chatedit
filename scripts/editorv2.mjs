@@ -1,8 +1,15 @@
-import { MODULE } from "./const.mjs";
+import {MODULE, SETTINGS} from "./const.mjs";
 import { Editing } from "./editing.mjs";
 
 const ApplicationV2 = foundry.applications?.api?.ApplicationV2 ?? (class { });
 const HandlebarsApplicationMixin = foundry.applications?.api?.HandlebarsApplicationMixin ?? (cls => cls);
+
+let PolyglotProvider = null;
+
+Hooks.once("polyglot.init", () => {
+  PolyglotProvider = game.polyglot;
+});
+
 export default class EditorV2 extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** @override */
@@ -45,9 +52,10 @@ export default class EditorV2 extends HandlebarsApplicationMixin(ApplicationV2) 
 
   /** @override */
   async _prepareContext(options) {
+    const tokens = [...game.scenes.viewed.tokens.values()];
 
     // Prepare possible speakers for selectOptions
-    const chars = game.scenes.viewed.tokens.values().reduce((acc, t) => {
+    const chars = tokens.reduce((acc, t) => {
       if (t.isOwner) acc.push({
         value: t.id,
         label: t.actor?.name,
@@ -56,27 +64,136 @@ export default class EditorV2 extends HandlebarsApplicationMixin(ApplicationV2) 
       })
       return acc;
     }, []);
+
     const users = [{
       value: game.user.id,
       label: game.user.name,
       group: "USER.RolePlayer",
       selected: this.message.speaker.token ? false : true
     }];
+
     const speakers = users.concat(chars);
 
-    // Prepare data & handle linebreaks
-    return foundry.utils.mergeObject(options, {
+    const languagesByToken = {};
+    if (PolyglotProvider) {
+      for (const token of tokens) {
+        const actor = token.actor;
+        if (!actor) continue;
+
+        const [known, literate] = PolyglotProvider.getUserLanguages([token.actor]);
+        if ([...known].length === 0) {
+          languagesByToken[token.id] = Object.keys(PolyglotProvider.languages);
+        } else {
+          languagesByToken[token.id] = [...known].sort();
+        }
+      }
+
+      if (game.user.isGM) {
+        // Give all languages under the GM's user id
+        languagesByToken[game.user.id] = Object.keys(PolyglotProvider.languages);
+      }
+    }
+
+    function htmlToMarkdown(html) {
+      if (!html) return "";
+
+      let s = String(html);
+
+      const parser = new showdown.Converter({ });
+      s = parser.makeMd(s).trim();
+
+      s = s.replace(/ *\n *<br\s*\/?>/gi, "")
+        .replace(/<br\s*\/?>\n/gi, "");
+
+      return s;
+    }
+
+    let html = this.message.content;
+    if (game.settings.get(MODULE, SETTINGS.MARKDOWN)) html = htmlToMarkdown(html);
+
+    const context = foundry.utils.mergeObject(options, {
       speakers,
       alias: this.message.speaker.alias ?? null,
-      content: this.message.content.replace(/< *br *\/?>/gm, '\r')
+      content: html,
+      hasPolyglot: !!PolyglotProvider,   // flag for Handlebars
+      languagesByToken
     });
+
+    // Store context on the instance so _onRender can access it
+    this.context = context;
+    return context
   }
 
   /** @override */
   _onRender() {
-    const speaker = this.element['speaker'];
-    let alias = this.element['alias'];
-    Editing._alias(speaker, alias);
+    const root = this.element;
+    const speakerSel = root.querySelector("[name='speaker']");
+    const langSel = root.querySelector("[name='language']");
+    const aliasInput = root.querySelector("[name='alias']");
+    Editing._alias(speakerSel, aliasInput);
+
+    const byToken = this.context?.languagesByToken ?? {};
+    const provider = PolyglotProvider || game.polyglot?.LanguageProvider;
+
+    if (provider) {
+      // message language or system default
+      const msgLang =
+        this.message.getFlag("polyglot", "language") ||
+        provider?.defaultLanguage ||
+        null;
+
+      // label helper
+      const labelFor = (key) =>
+        provider?.languages?.[key]?.label ?? key;
+
+      // get languages for the currently selected "speaker" value
+      const langsFor = (id) => {
+        // GM selecting themselves (user row) => all languages
+        if (game.user.isGM && id === game.user.id) {
+          return Object.keys(provider?.languages || {});
+        }
+        // token-based list
+        return byToken[id] || [];
+      };
+
+      // build options with: default first, then alpha by label; set selection
+      const fill = (id) => {
+        let langs = [...langsFor(id)];
+
+        // sort: default first, then by label
+        const def = provider?.defaultLanguage;
+        langs.sort((a, b) => {
+          if (a === def && b !== def) return -1;
+          if (b === def && a !== def) return 1;
+          const la = labelFor(a);
+          const lb = labelFor(b);
+          return la.localeCompare(lb);
+        });
+
+        // rebuild <option>s
+        langSel.innerHTML = "";
+        for (const key of langs) {
+          const opt = document.createElement("option");
+          opt.value = key;
+          opt.textContent = labelFor(key);
+          langSel.appendChild(opt);
+        }
+
+        // choose selection: message lang if present, else default, else first
+        const preferred =
+          (msgLang && langs.includes(msgLang) && msgLang) ||
+          (def && langs.includes(def) && def) ||
+          (langs[0] || "");
+
+        if (preferred) langSel.value = preferred;
+        langSel.disabled = langs.length === 0;
+      };
+
+      if (speakerSel && langSel) {
+        fill(speakerSel.value); // initial
+        speakerSel.addEventListener("change", (e) => fill(e.currentTarget.value));
+      }
+    }
   }
 
   /**

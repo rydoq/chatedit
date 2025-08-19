@@ -6,7 +6,6 @@ export class ModuleSettings {
   static init() {
     ModuleSettings._editing();
     ModuleSettings._markdown();
-    if (!foundry.utils.isNewerVersion(12, game.version)) ModuleSettings._v2();
   }
 
   // Register the settings
@@ -58,18 +57,6 @@ export class ModuleSettings {
       config: true,
       default: false,
       requiresReload: true
-    });
-  }
-
-  static _v2() {
-    game.settings.register(MODULE, SETTINGS.APPV2, {
-      name: "CHATEDIT.SETTINGS.AppV2.Name",
-      hint: "CHATEDIT.SETTINGS.AppV2.Hint",
-      scope: "client",
-      type: Boolean,
-      config: true,
-      default: false,
-      requiresReload: true,
     });
   }
 }

@@ -1,6 +1,11 @@
 import { MODULE, CHATEDIT_CONST, SETTINGS, localize } from "./const.mjs";
 import EditorV2 from "./editorv2.mjs";
-import Editor from "./editor.mjs";
+
+let PolyglotProvider = null;
+
+Hooks.once("polyglot.init", () => {
+  PolyglotProvider = game.polyglot;
+});
 
 export class Editing {
 
@@ -9,7 +14,7 @@ export class Editing {
       Editing._loadTemplates();
       
       // Add right click options to chat messages in the sidebar and popout chatlogs
-      Hooks.on("getChatLogEntryContext", Editing._contextMenu);
+      Hooks.on("getChatMessageContextOptions", Editing._contextMenu);
     };
   }
 
@@ -17,10 +22,10 @@ export class Editing {
    * Register handlebars partials.
    */
   static _loadTemplates() {
-    loadTemplates([
-      `modules/${MODULE}/templates/alias.hbs`,
-      `modules/${MODULE}/templates/bottom.hbs`
-    ]);
+      foundry.applications.handlebars.loadTemplates([
+          `modules/${MODULE}/templates/alias.hbs`,
+          `modules/${MODULE}/templates/bottom.hbs`
+      ]);
   }
 
   /* -------------------------------------------- */
@@ -46,9 +51,8 @@ export class Editing {
     const userid = user.id;
 
     // Handle linebreaks
-    let content;
-    content = data.content.replace(/[\r\n]{2,}/gim, '<br><br>')
-      .replace(/(\r\n|\r|\n)+/gim, '<br>');
+    let content = data.content;
+    let language = data.language;
 
     // Handle flagging the message as edited
     let flags;
@@ -65,7 +69,11 @@ export class Editing {
 
     // Handle out of character messages
     if (game.users.get(id)) {
-      speaker = ChatMessage._getSpeakerFromUser({ user });
+      speaker = {
+        alias: user.name,
+        scene: null,
+        actor: null,
+        token: null }
       if (message[STYLETYPE] === 0) style = message[STYLETYPE];
       else style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.OOC;
     } else {
@@ -75,7 +83,10 @@ export class Editing {
       speaker = ChatMessage.getSpeaker({ token });
 
       // Handle emotes
-      if (content.startsWith(token.name)) style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.EMOTE;
+      if (content.startsWith(token.name)) {
+        style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.EMOTE;
+        if (PolyglotProvider) language = PolyglotProvider.defaultLanguage;
+      }
       else style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.IC
     };
 
@@ -85,9 +96,19 @@ export class Editing {
     // Handle (don't destroy) markdown
     if (game.settings.get(MODULE, SETTINGS.MARKDOWN)) {
 
-      // Create the parser and parse
       const parser = new showdown.Converter({ extensions: ["inline"] });
-      let parsed = parser.makeHtml(content);
+
+      // Markdown -> HTML (for saving back into the chat message)
+      function markdownToHtml(markdown) {
+        if (!markdown) return "";
+
+        let s = String(markdown).replace(/\n/g, "<br>");
+
+        return parser.makeHtml(s).trim();
+      }
+
+      // Create the parser and parse
+      const parsed = markdownToHtml(content);
 
       // Call the pre process hook, then process
       const callback = Hooks.call("chatedit.preProcessChatMessage", message, parsed, parser, userid);
@@ -101,6 +122,14 @@ export class Editing {
     const callback = Hooks.call("chatedit.preEditChatMessage", message, { content, speaker, style, flags }, data, userid);
     if (!callback) return;
     await message.update({ content, speaker, [STYLETYPE]: style, flags });
+    if (PolyglotProvider) {
+      if (style === CHATEDIT_CONST.CHAT_MESSAGE_STYLES.OOC && language === PolyglotProvider.defaultLanguage){
+        await message.unsetFlag("polyglot", "language");
+      }
+      else {
+        await message.setFlag("polyglot", "language", language)
+      }
+    }
 
     // Call the edit hook
     Hooks.callAll("chatedit.editChatMessage", message, { content, speaker, style, flags }, data, userid);
@@ -143,23 +172,9 @@ export class Editing {
     const message = game.messages.get(id);
     let editor = Editing._editors.get(id);
     if (editor) {
-
-      // Bring the active editor for this message id to the top
-      if (foundry.utils.isNewerVersion(12, game.version) || !game.settings.get(MODULE, SETTINGS.APPV2)) {
-        editor.bringToTop();
-      }
-      else if (game.settings.get(MODULE, SETTINGS.APPV2) && !foundry.utils.isNewerVersion(12, game.version)) {
-        editor.bringToFront();
-      }
+      editor.bringToFront();
     } else {
-
-      // Create a new editor
-      if (foundry.utils.isNewerVersion(12, game.version) || !game.settings.get(MODULE, SETTINGS.APPV2)) {
-        editor = new Editor(message);
-      }
-      else if (game.settings.get(MODULE, SETTINGS.APPV2) && !foundry.utils.isNewerVersion(12, game.version)) {
-        editor = new EditorV2(message);
-      }
+      editor = new EditorV2(message);
 
       // Render and track the editor
       await editor.render({ force: true });
@@ -222,6 +237,13 @@ export class Editing {
       style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.EMOTE :
       style = CHATEDIT_CONST.CHAT_MESSAGE_STYLES.IC
     message.update({ [STYLETYPE]: style, speaker });
+    if (PolyglotProvider) {
+      const defaultLanguage = PolyglotProvider.defaultLanguage;
+      const language = (game.polyglot.getUserLanguages([character].actor)[0].has(defaultLanguage) ? defaultLanguage :
+          game.polyglot.getUserLanguages([character].actor)[0].values().next().value) ??
+        defaultLanguage;
+      message.setFlag("polyglot", "language", language);
+    }
   }
 
   /**
@@ -231,24 +253,37 @@ export class Editing {
   static _makeOOC(id) {
     let STYLETYPE = Editing.styleType();
     const message = game.messages.get(id);
-    const speaker = ChatMessage._getSpeakerFromUser({ user: game.user });
-    message.update({ [STYLETYPE]: CHATEDIT_CONST.CHAT_MESSAGE_STYLES.OOC, speaker });
+    //const speaker = ChatMessage.getSpeaker({ scene: game.user.viewedScene });
+
+    const speaker = {
+      alias: game.user.name,
+      scene: null,
+      actor: null,
+      token: null }
+
+    message.update({
+      [STYLETYPE]: CHATEDIT_CONST.CHAT_MESSAGE_STYLES.OOC,
+      speaker });
+    if (PolyglotProvider) {
+      message.unsetFlag("polyglot", "language");
+    }
   }
 
   /**
-   * Populate the right click options for editing chat messages.
+   * Populate the right click items for editing chat messages.
    * @param {HTMLElement} html HTML contents.
-   * @param {Array} options    The context menu options.
+   * @param {Array} menuItems    The context menu items.
    */
-  static _contextMenu(html, options) {
-    options.push(
+  static _contextMenu(html, menuItems) {
+    menuItems.push(
       {
         name: "CHATEDIT.EDITS.IC",
         icon: '<i class="fa-solid fa-masks-theater"></i>',
-        condition: ([li]) => {
+
+        condition: (li) => {
           return Editing._isOOC(li.dataset.messageId) && (canvas.tokens.controlled[0] ?? game.user.character);
         },
-        callback: ([li]) => {
+        callback: (li) => {
           Editing._makeIC(li.dataset.messageId);
         },
         group: MODULE
@@ -256,10 +291,10 @@ export class Editing {
       {
         name: "CHATEDIT.EDITS.OOC",
         icon: '<i class="fa-solid fa-computer"></i>',
-        condition: ([li]) => {
+        condition: (li) => {
           return Editing._isIC(li.dataset.messageId);
         },
-        callback: ([li]) => {
+        callback: (li) => {
           Editing._makeOOC(li.dataset.messageId);
         },
         group: MODULE
@@ -267,15 +302,15 @@ export class Editing {
       {
         name: "CHATEDIT.EDITS.Edit",
         icon: '<i class="fa-solid fa-eraser"></i>',
-        condition: ([li]) => {
+        condition: (li) => {
           return Editing._canEdit(li.dataset.messageId);
         },
-        callback: ([li]) => {
+        callback: (li) => {
           Editing.editMessage(li.dataset.messageId);
         },
         group: MODULE
       }
     )
-    return options;
+    return menuItems;
   }
 }

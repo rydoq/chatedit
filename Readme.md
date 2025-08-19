@@ -6,18 +6,19 @@ A module for editing and styling chat messages. It is a lightweight chat editor,
 
 Allows the editing of chat messages that *you* created (GMs cannot edit messages from other users); change the speaker (potential speakers include only owned tokens on the currently viewed scene), alias, and style, and process chat messages with Foundry's built-in markdown processor (Showdown) for *emphasis*, **bold**, and ~~more~~.
 
+If <a href= "https://foundryvtt.com/packages/polyglot">Polyglot</a> is enabled, allows the user to change the language the token is speaking. The default language shows at the top of the list if the token speaks it. If the user is a GM and are speaking out of character, they may select from any language. And if the token speaks no languages, the user may select from any language. It sounds complicated, but it should work just the same as Polyglot.
+
 ## Settings
 - Allow Editing (on by default). *World setting*.
-- Show Edited Messages: show message, show icon, do not show (shows icon by default). *World setting*.
+- Show Edited Messages: show message, show icon, do not show (shows icon by default). *World setting*. - The show message option has a visual bug where as the timestamp changes, the game adds or removes a whitespace. I recommend using the icon.
 - Markdown Styling (on by default). *Client setting*.
-- Allow Emojis (off by default). *World setting*.
-- Use ApplicationV2 (on by default for Version 12, disabled in Version 11), if for some reason, you want to stick with the Application V1 style. *Client setting*.
+- Allow Emojis (off by default). *World setting*. - Note that this doesn't seem to do anything through my testing so I'll probably get rid of it in a future version? I'm always able to edit in emojis no matter if this is on or not at least.
 
-## Dual Version Support
-Currently supports both version 11 and version 12 of Foundry.
+## Now Only Supports V13
+If you want a version that supports v11 or v12 of Foundry, please download from the original mod here: https://github.com/etiquettestartshere/chatedit. Note it will not have Polyglot support.
 
 ## System Requirements
-This module is, to the best of my abilities, designed to be system agnostic. The most obvious failure point would be allowing messages that are not supposed to be edited to be edited, or the (edited) message or icon displaying incorrectly depending on system's chat cards. I have currently tested it on dnd5e and swb. If you find that it does not function as desired on another system, please make a github issue about it and compatibility will be investigated.
+This module is, to the best of my abilities, designed to be system agnostic. The most obvious failure point would be allowing messages that are not supposed to be edited to be edited, or the (edited) message or icon displaying incorrectly depending on system's chat cards. The original mod was tested on dnd5e and swb and I've tested it on PF2e. If you find that it does not function as desired on another system, please make a github issue about it and compatibility will be investigated.
 
 ## Limitations
 Does not correctly support certain markdown styles, such as sorted or unsorted lists. This is due to, I believe, how foundry handles line breaks. Personally I have no use for them and am only after inline styling, so if someone wants this to work correctly I would be open to pull requests.
@@ -76,13 +77,15 @@ Hooks.callAll("chatedit.editChatMessage", message, { content, speaker, style, fl
 ```
 
 ### Future Plans
-Once I consider this module stable and feature complete, version 11 support will be dropped, and I will release a lighter weight v12 only version. Due to the uncertain nature of appv2/themev2 requirements for version 13, whether or not chat messages and the chat sidebar and popout experience a full deprecation of appv1 will determine whether this module survives into v13. Most likely, if the transition to appv2 is too arduous (and in particular, if it breaks the ability for foundry's tiny chat to be resized), I will stop using foundry altogether. Thus, this module is MIT licensed and anyone who wants to can pick it up with no hassle.
+I would like to fix the visual problem on the edit window with the extra spaces at the start of lines. Other than that, I don't have any other plans besides keeping this up to date with Foundry's newest release.
 ___
 
 ###### **Technical Details**
 
-**Scope:** A custom application (one for appv1 and appv2) to edit chat messages, accessible from chat message context menus, and an implementation of Showdown as bundled by Foundry on preCreate hooks to add markdown parsing to message content. If "Show Edited Messages" is enabled, messages that are edited will be flagged once by a `chatedit: { edited: Boolean }` flag. The only other data modified is the `content` and `speaker` of chat messages when they are edited, or processed by Showdown.
+**Scope:** A custom application for appv2 to edit chat messages, accessible from chat message context menus, and an implementation of Showdown as bundled by Foundry on preCreate hooks to add markdown parsing to message content. If "Show Edited Messages" is enabled, messages that are edited will be flagged once by a `chatedit: { edited: Boolean }` flag. The only other data modified is the `content` and `speaker` of chat messages when they are edited, or processed by Showdown. Now includes support for changing languages in editing through the Polyglot module.
 
 **License:** MIT license.
 
-**Additional Info:** Thank you to the original (to my knowledge) chat editor module DF Chat Enhancements and its author flamewave000, and to Karakara's Chat Enhancements and its author Julia. This module carries forward some ideas originally from (to my knowledge) DF Chat Enhancements, and a few ideas from Karakara's, too (though the approach of this module varies). Thanks also to dnd5e, from which I took a tiny bit of css for the context menu groups. Thanks also to Zhell, Flix, mxzf, esheyw, ChaosOS, and Ethaks for putting up with me as I struggled to bring a chat editor module into the modern era. Thanks especially to Mana, who told me to use Showdown rather than bundling an external markdown library.
+**Fork Additional Info:** No chat editing mod was available for v13 so rather than continue to complain about it I decided to just make one myself. Thankfully, there was already one out there with an MIT license, so all I had to do was edit the code to work with the newer Foundry versions and appv2. Therefore, most of the work here can be credited to the original author etiquettestartshere, whom I can't thank enough for the original mod. I've really only edited some code to work for v13, changed the editor window to show markdown instead of html, and added Polyglot integration. Original thanks from them below:
+
+**Original Additional Info:** Thank you to the original (to my knowledge) chat editor module DF Chat Enhancements and its author flamewave000, and to Karakara's Chat Enhancements and its author Julia. This module carries forward some ideas originally from (to my knowledge) DF Chat Enhancements, and a few ideas from Karakara's, too (though the approach of this module varies). Thanks also to dnd5e, from which I took a tiny bit of css for the context menu groups. Thanks also to Zhell, Flix, mxzf, esheyw, ChaosOS, and Ethaks for putting up with me as I struggled to bring a chat editor module into the modern era. Thanks especially to Mana, who told me to use Showdown rather than bundling an external markdown library.

@@ -1,15 +1,28 @@
 import { MODULE, CHATEDIT_CONST, SETTINGS, localize } from "./const.mjs";
 import { Editing } from "./editing.mjs";
 
+let polyglotInitialized = false;
+
+let onPolyglotInitHook = Hooks.once("polyglot.init", () => {
+    polyglotInitialized = true;
+    ProcessChat.init();
+});
+
 export class ProcessChat {
   static init() {
+    const polyglotActive = game.modules.get("polyglot")?.active ?? false;
+
+    if (polyglotActive && !polyglotInitialized) return;
+    else if (!polyglotActive) Hooks.off("polyglot.init", onPolyglotInitHook);
+
     if (game.settings.get(MODULE, SETTINGS.MARKDOWN)) {
       Hooks.on("preCreateChatMessage", ProcessChat.processShowdown);
       ProcessChat._showdownOptions();
       ProcessChat.enrichers();
     }
-    Hooks.on("renderChatMessage", ProcessChat._edited);
-    Hooks.on("renderChatMessage", ProcessChat._ooc);
+    // This is the problem. renderChatMessage got removed and replaced with renderChatMessageHTML
+    Hooks.on("renderChatMessageHTML", ProcessChat._edited);
+    Hooks.on("renderChatMessageHTML", ProcessChat._ooc);
   }
 
   /**
@@ -80,7 +93,7 @@ export class ProcessChat {
    * @param {ChatMessage} message The ChatMessage to be parsed.
    * @param {HTMLElement} html HTML contents of the message.
    */
-  static _edited(message, [html]) {
+  static _edited(message, html) {
     const flag = message.flags?.chatedit?.edited;
     if (!flag) return;
     const show = game.settings.get(MODULE, SETTINGS.SHOW);
@@ -97,7 +110,7 @@ export class ProcessChat {
    * @param {ChatMessage} message The ChatMessage.
    * @param {HTMLElement} html HTML contents of the message.
    */
-  static _ooc(message, [html]) {
+  static _ooc(message, html) {
     if (message.isRoll) return;
     let STYLETYPE = Editing.styleType();
     if (message[STYLETYPE] === CHATEDIT_CONST.CHAT_MESSAGE_STYLES.OOC) html.classList.add("ooc");

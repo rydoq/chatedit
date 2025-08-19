@@ -4,6 +4,7 @@
       "Alias": "Alias",
       "Clear": "Clear",
       "Edit": "Edit Message",
+      "Language": "Language",
       "Flag": "(edited)",
       "IC": "Make In Character",
       "NotAllowed": "Cannot edit this message.",
@@ -17,17 +18,13 @@
         "Name": "Allow Editing",
         "Hint": "Allow messages to be edited (via right click)."
       },
-      "AppV2": {
-        "Name": "Use ApplicationV2",
-        "Hint": "Use the ApplicationV2 editor with native darkmode support."
-      },
       "Emoji": {
         "Name": "Allow Emojis",
         "Hint": "Enable some emojis."
       },
       "Markdown": {
         "Name": "Markdown Styling",
-        "Hint": "Enable mardown styling of chat messages."
+        "Hint": "Enable markdown styling of chat messages."
       },
       "ShowEdited": {
         "Icon": "Show Icon",

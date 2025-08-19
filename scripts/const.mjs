@@ -8,7 +8,6 @@ export const CHATEDIT_CONST = {
   }
 };
 export const SETTINGS = {
-  APPV2: "appv2",
   EDIT: "allowEdit",
   EMOJI: "emoji",
   MARKDOWN: "markdown",
