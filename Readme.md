@@ -2,7 +2,7 @@
 A module for editing and styling chat messages. It is a lightweight chat editor, with no module dependencies and no external libraries. It is *not* a 'chat enhancement' module (though it might be mistaken for one). Its intent is to bring the Foundry chat message experience to the bare minimum of acceptability for text roleplay.
 
 ## Features
-<p style="text-align: center"><img src="https://i.imgur.com/jm7LGYQ.png" style="border: none" alt="An image showing message editing in Foundry and markdown support"></p>
+<p style="text-align: center"><img src="https://i.imgur.com/p2E8Jtg.png" style="border: none" alt="An image showing message editing in Foundry and markdown support"></p>
 
 Allows the editing of chat messages that *you* created (GMs cannot edit messages from other users); change the speaker (potential speakers include only owned tokens on the currently viewed scene), alias, and style, and process chat messages with Foundry's built-in markdown processor (Showdown) for *emphasis*, **bold**, and ~~more~~.
 
@@ -14,7 +14,7 @@ If <a href= "https://foundryvtt.com/packages/polyglot">Polyglot</a> is enabled, 
 - Markdown Styling (on by default). *Client setting*.
 - Allow Emojis (off by default). *World setting*. - Note that this doesn't seem to do anything through my testing so I'll probably get rid of it in a future version? I'm always able to edit in emojis no matter if this is on or not at least.
 
-## Now Only Supports V13
+## Now Only Supports v13
 If you want a version that supports v11 or v12 of Foundry, please download from the original mod here: https://github.com/etiquettestartshere/chatedit. Note it will not have Polyglot support.
 
 ## System Requirements

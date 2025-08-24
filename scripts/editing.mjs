@@ -7,9 +7,38 @@ Hooks.once("polyglot.init", () => {
   PolyglotProvider = game.polyglot;
 });
 
-export class Editing {
+function ChangeDorakoUIImage(speaker, message) {
+  if (message.flags["pf2e-dorako-ui"] != null) {
+    const token = game.scenes.viewed.tokens.get(speaker.token);
+    const actor = game.actors.get(speaker.actor);
+    const userAvatar = null;
+    const combatantAvatar = null;
+    const tokenAvatar = speaker.token ? {
+      "image": token.texture.src,
+      "name": speaker.alias,
+      "scale": token.texture.scaleX,
+      "isSmall": actor.size == "sm",
+      "type": "token"
+    } : null;
+    const actorAvatar = speaker.actor ? {
+      "image": actor.img,
+      "name": speaker.alias,
+      "type": "actor"
+    } : null;
+    const subjectAvatar = null;
 
-  static init() {
+    message.updateSource({
+      "flags.pf2e-dorako-ui.userAvatar": userAvatar,
+      "flags.pf2e-dorako-ui.combatantAvatar": combatantAvatar,
+      "flags.pf2e-dorako-ui.tokenAvatar": tokenAvatar,
+      "flags.pf2e-dorako-ui.actorAvatar": actorAvatar,
+      "flags.pf2e-dorako-ui.subjectAvatar": subjectAvatar,
+    });
+  }
+}
+
+export class Editing {
+    static init() {
     if (game.settings.get(MODULE, SETTINGS.EDIT)) {
       Editing._loadTemplates();
       
@@ -130,6 +159,7 @@ export class Editing {
         await message.setFlag("polyglot", "language", language)
       }
     }
+    ChangeDorakoUIImage(speaker, message);
 
     // Call the edit hook
     Hooks.callAll("chatedit.editChatMessage", message, { content, speaker, style, flags }, data, userid);
@@ -243,6 +273,7 @@ export class Editing {
         defaultLanguage;
       message.setFlag("polyglot", "language", language);
     }
+    ChangeDorakoUIImage(speaker, message);
   }
 
   /**
@@ -266,6 +297,7 @@ export class Editing {
     if (PolyglotProvider) {
       message.unsetFlag("polyglot", "language");
     }
+    ChangeDorakoUIImage(speaker, message);
   }
 
   /**
