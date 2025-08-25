@@ -1,4 +1,4 @@
-export const MODULE = "chatedit";
+export const MODULE = "chatedit-new";
 export const CHATEDIT_CONST = {
   CHAT_MESSAGE_STYLES: {
     EMOTE: 3,
